@@ -103,3 +103,32 @@ This is exactly the KL expansion of the **discretized process** on the grid.
 As the mesh is refined and \(K\) increases, this approximates the continuous
 KL expansion of fBm; this is a classical Nyström-type discretization of the
 covariance operator.
+
+---
+
+## Usage: minimal Python example
+
+```python
+import numpy as np
+
+from core import fbm_kl_truncated
+
+H = 0.7        # Hurst parameter
+T = 1.0        # time horizon
+K = 30         # number of KL terms
+n_steps = 500  # number of time steps
+seed = 42      # for reproducibility
+
+t, path = fbm_kl_truncated(H=H, T=T, K=K, n_steps=n_steps, random_state=seed)
+
+# Print first few points of the trajectory
+print("First 10 time points:", t[:10])
+print("First 10 values of B^H_t:", path[:10])
+
+# import matplotlib.pyplot as plt
+# plt.plot(t, path)
+# plt.xlabel("t")
+# plt.ylabel("B^H_t")
+# plt.title(f"Fractional Brownian motion via KL (H={H})")
+# plt.grid(True)
+# plt.show()
