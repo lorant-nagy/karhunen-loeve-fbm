@@ -1,134 +1,71 @@
-# Fractional Brownian Motion via Karhunen–Loève Expansion
+# Karhunen–Loève approximation of fractional Brownian motion
 
-This repository provides a **numerical Karhunen–Loève (KL) representation** of
-fractional Brownian motion (fBm) on a finite interval \([0, T]\).
+We consider fractional Brownian motion on a finite grid
 
-The core idea:
-
-- fBm is a centered Gaussian process with a known covariance kernel.
-- On a finite time grid, the covariance kernel induces a **covariance matrix**.
-- Diagonalizing that matrix yields a **finite-dimensional KL expansion**.
-- Truncating the expansion gives a practical and interpretable simulator.
-
-Mathematically, this is a **Nyström-type discretization** of the covariance
-operator of fBm.
-
----
-
-## Theory Overview
-
-### 1. Karhunen–Loève expansion (continuous setting)
-
-Let \((X_t)_{t \in [0,T]}\) be a centered, square-integrable stochastic process
-with continuous covariance kernel
 \[
-R(s, t) = \mathbb{E}[X_s X_t].
+t_0,\dots,t_n.
 \]
 
-The associated covariance operator \(K\) on \(L^2[0,T]\) is
+The vector
+
 \[
-(Kf)(t) = \int_0^T R(s, t) f(s)\, ds.
+B =
+\begin{pmatrix}
+B^H_{t_0}\\
+\vdots\\
+B^H_{t_n}
+\end{pmatrix}
 \]
 
-Under mild conditions, \(K\) is a compact, self-adjoint, positive operator, so
-there exists an orthonormal basis of eigenfunctions
-\(\{e_n\}_{n \ge 1}\) with eigenvalues \(\lambda_n \ge 0\), \(\lambda_n \to 0\).
+is Gaussian with covariance
 
-The Karhunen–Loève expansion states that
 \[
-X_t = \sum_{n=1}^\infty \sqrt{\lambda_n} \, \xi_n \, e_n(t),
-\]
-where \(\xi_n\) are uncorrelated, mean-zero random variables with
-\(\mathbb{E}[\xi_n^2] = 1\). If \(X\) is Gaussian, the \(\xi_n\) are actually
-i.i.d. standard normal random variables.
-
-This expansion converges in \(L^2\), and often almost surely.
-
-### 2. Fractional Brownian motion
-
-Fractional Brownian motion (fBm) with Hurst parameter \(H \in (0,1)\) is the
-centered Gaussian process \((B^H_t)_{t \in [0,T]}\) with covariance
-\[
-R_H(s, t) = \mathbb{E}[B^H_s B^H_t]
-= \frac{1}{2} \left( |s|^{2H} + |t|^{2H} - |t - s|^{2H} \right).
+\Sigma_{ij}
+=
+\frac12\left(
+t_i^{2H}+t_j^{2H}-|t_i-t_j|^{2H}
+\right).
 \]
 
-- For \(H = 1/2\), this reduces to standard Brownian motion.
-- For \(H \neq 1/2\), fBm is not a semimartingale and exhibits long-range
-  dependence (for \(H > 1/2\)) or short-range dependence (for \(H < 1/2\)).
+We diagonalize the covariance matrix,
 
-Because fBm is Gaussian with a continuous covariance kernel, it admits a KL
-expansion of the form
 \[
-B^H_t = \sum_{n=1}^\infty \sqrt{\lambda_n^{(H)}} \, \xi_n \, e_n^{(H)}(t),
-\]
-where \((\lambda_n^{(H)}, e_n^{(H)})\) are eigenpairs of the covariance
-operator associated with \(R_H\).
-
-In general, these eigenfunctions are **not** available in a simple closed form
-(except in special cases), which motivates a numerical approach.
-
-### 3. Nyström-type discretization
-
-On a finite time grid
-\[
-0 = t_0 < t_1 < \dots < t_{N-1} = T,
-\]
-define the covariance matrix
-\[
-C_{ij} = R_H(t_i, t_j).
+\Sigma = Q\Lambda Q^T,
 \]
 
-This matrix is symmetric and positive semidefinite. We compute its
-eigen-decomposition
-\[
-C = V \Lambda V^\top,
-\]
-where \(\Lambda = \mathrm{diag}(\lambda_1, \dots, \lambda_N)\) and the columns
-of \(V\) are eigenvectors \(v_1, \dots, v_N\).
+where \(q_i\) are the eigenvectors and \(\lambda_i\) the eigenvalues.
+A sample can then be written as
 
-This is the **finite-dimensional analogue** of the KL expansion:
 \[
-(B^H_{t_0}, \dots, B^H_{t_{N-1}})^\top
-= \sum_{n=1}^N \sqrt{\lambda_n} \, \xi_n \, v_n,
-\]
-with \(\xi_n \sim \mathcal{N}(0,1)\) independent.
-
-Truncating after the first \(K\) eigenpairs (largest eigenvalues) yields
-\[
-X \approx \sum_{n=1}^K \sqrt{\lambda_n} \, \xi_n \, v_n.
+B
+=
+\sum_i \sqrt{\lambda_i}\,Z_i\,q_i,
+\qquad
+Z_i\sim N(0,1).
 \]
 
-This is exactly the KL expansion of the **discretized process** on the grid.
-As the mesh is refined and \(K\) increases, this approximates the continuous
-KL expansion of fBm; this is a classical Nyström-type discretization of the
-covariance operator.
+Keeping only the first \(K\) eigenvectors gives the truncated approximation
 
----
+\[
+B^{(K)}
+=
+\sum_{i=1}^{K}\sqrt{\lambda_i}\,Z_i\,q_i.
+\]
 
-## Usage: minimal Python example
+This is the Karhunen–Loève/PCA representation of the discretized process on the chosen grid. Using all nonzero modes gives the exact Gaussian distribution on that grid; using fewer modes gives a low-rank approximation.
+
+## Example
 
 ```python
-import numpy as np
-
 from core import fbm_kl_truncated
 
-H = 0.7        # Hurst parameter
-T = 1.0        # time horizon
-K = 30         # number of KL terms
-n_steps = 500  # number of time steps
-seed = 42      # for reproducibility
+t, path = fbm_kl_truncated(
+    H=0.7,
+    T=1.0,
+    n_steps=500,
+    K=30,
+    random_state=1,
+)
 
-t, path = fbm_kl_truncated(H=H, T=T, K=K, n_steps=n_steps, random_state=seed)
-
-# Print first few points of the trajectory
-print("First 10 time points:", t[:10])
-print("First 10 values of B^H_t:", path[:10])
-
-# import matplotlib.pyplot as plt
-# plt.plot(t, path)
-# plt.xlabel("t")
-# plt.ylabel("B^H_t")
-# plt.title(f"Fractional Brownian motion via KL (H={H})")
-# plt.grid(True)
-# plt.show()
+print(path.shape)
+```

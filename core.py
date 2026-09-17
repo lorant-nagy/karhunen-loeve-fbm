@@ -50,10 +50,9 @@ def fbm_kl_truncated(
     Simulate fractional Brownian motion on [0, T] using a truncated
     Karhunen–Loève expansion on an equidistant grid.
 
-    This uses a Nyström-type discretization of the covariance operator:
-    we build the covariance matrix C_ij = R_H(t_i, t_j) on the grid,
-    diagonalize it, and use the eigenvectors/eigenvalues to sample
-    a Gaussian vector with the desired covariance.
+    We build the covariance matrix C_ij = R_H(t_i, t_j) on the grid,
+    diagonalize it, and keep the K largest eigenpairs. This is the
+    KL/PCA representation of the discretized Gaussian vector.
 
     Parameters
     ----------
